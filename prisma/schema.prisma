@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  user
+  admin
+}
+
+enum ChatSenderRole {
+  user
+  admin
+}
+
+enum NotificationAudience {
+  admin
+  user
+}
+
+enum NotificationType {
+  contact
+  chat
+  system
+}
+
+enum PushAudience {
+  admin
+  user
+  guest
+}
+
+model User {
+  id             String             @id @default(cuid())
+  email          String             @unique
+  name           String?
+  passwordHash   String
+  role           UserRole           @default(user)
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  updatedContent PortfolioContent[] @relation("ContentUpdatedBy")
+  assets         Asset[]
+  messages       ChatMessage[]      @relation("ChatTargetUser")
+  sentMessages   ChatMessage[]      @relation("ChatSenderUser")
+  notifications  Notification[]
+  pushSubscriptions PushSubscription[]
+
+  @@index([role, createdAt])
+}
+
+model PortfolioContent {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  data        Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  updatedBy   User?    @relation("ContentUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([updatedAt])
+}
+
+model PortfolioView {
+  id         String   @id @default(cuid())
+  visitorKey String   @unique
+  userId     String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+model Asset {
+  id           String   @id @default(cuid())
+  type         String
+  filename     String
+  url          String
+  size         Int
+  createdAt    DateTime @default(now())
+  uploadedById String?
+
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  senderRole ChatSenderRole @default(user)
+  senderId  String?
+  message   String
+  deliveredAt DateTime?
+  seenAt    DateTime?
+  deletedByUserAt DateTime?
+  deletedByAdminAt DateTime?
+  createdAt DateTime @default(now())
+
+  user      User     @relation("ChatTargetUser", fields: [userId], references: [id], onDelete: Cascade)
+  sender    User?    @relation("ChatSenderUser", fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([senderId, createdAt])
+  @@index([userId, deliveredAt])
+  @@index([userId, seenAt])
+  @@index([userId, deletedByUserAt])
+  @@index([userId, deletedByAdminAt])
+}
+
+model Notification {
+  id        String               @id @default(cuid())
+  audience  NotificationAudience
+  type      NotificationType
+  title     String
+  body      String
+  createdAt DateTime             @default(now())
+  readAt    DateTime?
+  userId    String?
+
+  user      User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([audience, createdAt])
+  @@index([userId, createdAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String?
+  guestId   String?
+  deviceId  String?
+  audience  PushAudience @default(guest)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  lastSeenAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([guestId, createdAt])
+  @@index([audience, createdAt])
+  @@index([deviceId, updatedAt])
+  @@index([userId, deviceId])
+  @@index([guestId, deviceId])
+}
