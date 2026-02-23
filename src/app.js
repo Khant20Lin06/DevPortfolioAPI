@@ -1,4 +1,3 @@
-import path from "path";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -8,6 +7,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import { logger } from "./lib/logger.js";
 import { getMetricsSnapshot, observeLatency } from "./lib/metrics.js";
 import { HttpError } from "./lib/errors.js";
+import { uploadDir } from "./lib/uploadDir.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import contentRoutes from "./routes/contentRoutes.js";
@@ -39,7 +39,11 @@ export const createApp = () => {
 
   app.disable("x-powered-by");
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    })
+  );
   app.use(
     cors({
       origin: corsOrigin,
@@ -48,7 +52,14 @@ export const createApp = () => {
     })
   );
   app.use(express.json({ limit: "512kb" }));
-  app.use("/uploads", express.static(path.resolve(env.UPLOAD_DIR)));
+  app.use(
+    "/uploads",
+    (_req, res, next) => {
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+      next();
+    },
+    express.static(uploadDir)
+  );
 
   app.use((req, res, next) => {
     const start = Date.now();

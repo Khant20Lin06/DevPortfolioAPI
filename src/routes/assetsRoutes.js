@@ -2,13 +2,12 @@ import fs from "fs";
 import path from "path";
 import { Router } from "express";
 import multer from "multer";
-import { env } from "../config/env.js";
 import { requireAdmin, requireAuth } from "../middleware/auth.js";
 import { registerUploadedAsset, getAssets } from "../services/assetService.js";
+import { uploadDir } from "../lib/uploadDir.js";
 
 const router = Router();
 
-const uploadDir = path.resolve(process.cwd(), env.UPLOAD_DIR);
 fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({

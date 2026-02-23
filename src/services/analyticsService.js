@@ -65,7 +65,7 @@ export const trackPortfolioView = async ({ visitorKey, userId = null }) => {
   const totalViews = await countPortfolioViews();
   const createdAt = new Date().toISOString();
 
-  const title = "New portfolio visitor";
+  const title = "New user Portfolio Views";
   const body = "A new user viewed your portfolio.";
   const data = {
     metric: "portfolio_views",
