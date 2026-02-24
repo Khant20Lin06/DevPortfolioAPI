@@ -1,29 +1,12 @@
-import fs from "fs";
-import path from "path";
 import { Router } from "express";
 import multer from "multer";
 import { requireAdmin, requireAuth } from "../middleware/auth.js";
 import { registerUploadedAsset, getAssets } from "../services/assetService.js";
-import { uploadDir } from "../lib/uploadDir.js";
 
 const router = Router();
 
-fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname || "");
-    const safeExt = ext.slice(0, 10);
-    const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    cb(null, `${unique}${safeExt}`);
-  },
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 25 * 1024 * 1024,
   },

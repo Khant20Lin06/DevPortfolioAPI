@@ -14,10 +14,12 @@
     "db:deploy": "prisma migrate deploy",
     "worker:run": "node scripts/run-worker-once.js",
     "cleanup:retention": "node scripts/cleanup-expired.js",
+    "cleanup:assets": "node scripts/cleanup-orphan-assets.js",
     "seed:admin": "node scripts/seed-admin.js",
     "content:reset": "node scripts/reset-content-defaults.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.840.0",
     "@prisma/client": "^6.4.0",
     "@sentry/node": "^8.52.0",
     "bcryptjs": "^2.4.3",

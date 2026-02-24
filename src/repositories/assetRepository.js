@@ -16,3 +16,18 @@ export const listAssets = ({ limit = 50 } = {}) =>
     orderBy: { createdAt: "desc" },
     take: limit,
   });
+
+export const listAllAssets = () =>
+  prisma.asset.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+
+export const findAssetByUrl = ({ url }) =>
+  prisma.asset.findFirst({
+    where: { url },
+  });
+
+export const deleteAssetById = ({ id }) =>
+  prisma.asset.delete({
+    where: { id },
+  });

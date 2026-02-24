@@ -1,4 +1,11 @@
-import { createAsset, listAssets } from "../repositories/assetRepository.js";
+import {
+  createAsset,
+  deleteAssetById,
+  findAssetByUrl,
+  listAllAssets,
+  listAssets,
+} from "../repositories/assetRepository.js";
+import { isManagedAssetUrl, storage } from "../lib/storage/index.js";
 
 const resolveType = (mimetype) => {
   if (!mimetype) return "file";
@@ -8,14 +15,14 @@ const resolveType = (mimetype) => {
 };
 
 export const registerUploadedAsset = async ({ file, uploadedById }) => {
-  const url = `/uploads/${file.filename}`;
+  const stored = await storage.save(file);
   const type = resolveType(file.mimetype);
 
   const created = await createAsset({
     type,
-    filename: file.filename,
-    url,
-    size: file.size,
+    filename: stored.filename,
+    url: stored.url,
+    size: stored.size,
     uploadedById,
   });
 
@@ -25,6 +32,7 @@ export const registerUploadedAsset = async ({ file, uploadedById }) => {
     filename: created.filename,
     url: created.url,
     size: created.size,
+    key: stored.key,
     createdAt: created.createdAt,
   };
 };
@@ -39,4 +47,53 @@ export const getAssets = async ({ limit }) => {
     size: asset.size,
     createdAt: asset.createdAt,
   }));
+};
+
+const collectFromNode = (node, output) => {
+  if (typeof node === "string") {
+    const value = node.trim();
+    if (value && isManagedAssetUrl(value)) {
+      output.add(value);
+    }
+    return;
+  }
+
+  if (Array.isArray(node)) {
+    node.forEach((child) => collectFromNode(child, output));
+    return;
+  }
+
+  if (node && typeof node === "object") {
+    Object.values(node).forEach((child) => collectFromNode(child, output));
+  }
+};
+
+export const collectManagedAssetUrls = (input) => {
+  const output = new Set();
+  collectFromNode(input, output);
+  return output;
+};
+
+export const deleteManagedAssetByUrl = async (url) => {
+  const normalized = String(url ?? "").trim();
+  if (!normalized || !isManagedAssetUrl(normalized)) {
+    return { deleted: false, reason: "unmanaged_url" };
+  }
+
+  const asset = await findAssetByUrl({ url: normalized });
+  const result = await storage.deleteByUrl(normalized, { asset: asset ?? null });
+
+  if (asset) {
+    await deleteAssetById({ id: asset.id });
+  }
+
+  return {
+    ...result,
+    assetId: asset?.id ?? null,
+  };
+};
+
+export const listAllManagedAssets = async () => {
+  const items = await listAllAssets();
+  return items.filter((asset) => isManagedAssetUrl(asset.url));
 };
