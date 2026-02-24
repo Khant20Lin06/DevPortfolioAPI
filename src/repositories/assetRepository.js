@@ -22,10 +22,24 @@ export const listAllAssets = () =>
     orderBy: { createdAt: "desc" },
   });
 
-export const findAssetByUrl = ({ url }) =>
-  prisma.asset.findFirst({
-    where: { url },
+export const findAssetByUrl = ({ url }) => {
+  const normalized = String(url ?? "").trim();
+  if (!normalized) return null;
+
+  const where = normalized.startsWith("/uploads/")
+    ? {
+        OR: [
+          { url: normalized },
+          { url: { endsWith: normalized } },
+        ],
+      }
+    : { url: normalized };
+
+  return prisma.asset.findFirst({
+    where,
+    orderBy: { createdAt: "desc" },
   });
+};
 
 export const deleteAssetById = ({ id }) =>
   prisma.asset.delete({

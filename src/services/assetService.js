@@ -14,6 +14,26 @@ const resolveType = (mimetype) => {
   return "file";
 };
 
+const normalizeManagedUrl = (value) => {
+  const input = String(value ?? "").trim();
+  if (!input) return "";
+  if (input.startsWith("/uploads/")) {
+    return input.split("?")[0].split("#")[0];
+  }
+  if (/^https?:\/\//i.test(input)) {
+    try {
+      const parsed = new URL(input);
+      if (parsed.pathname.startsWith("/uploads/")) {
+        return parsed.pathname;
+      }
+      return `${parsed.protocol}//${parsed.host}${parsed.pathname}`;
+    } catch (_error) {
+      return input;
+    }
+  }
+  return input;
+};
+
 export const registerUploadedAsset = async ({ file, uploadedById }) => {
   const stored = await storage.save(file);
   const type = resolveType(file.mimetype);
@@ -51,7 +71,7 @@ export const getAssets = async ({ limit }) => {
 
 const collectFromNode = (node, output) => {
   if (typeof node === "string") {
-    const value = node.trim();
+    const value = normalizeManagedUrl(node);
     if (value && isManagedAssetUrl(value)) {
       output.add(value);
     }
@@ -75,7 +95,7 @@ export const collectManagedAssetUrls = (input) => {
 };
 
 export const deleteManagedAssetByUrl = async (url) => {
-  const normalized = String(url ?? "").trim();
+  const normalized = normalizeManagedUrl(url);
   if (!normalized || !isManagedAssetUrl(normalized)) {
     return { deleted: false, reason: "unmanaged_url" };
   }
