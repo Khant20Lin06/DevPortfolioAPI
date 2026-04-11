@@ -10,6 +10,7 @@
     "lint": "node -e \"console.log('Backend lint not configured yet')\"",
     "test": "vitest run",
     "db:generate": "prisma generate",
+    "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "worker:run": "node scripts/run-worker-once.js",
