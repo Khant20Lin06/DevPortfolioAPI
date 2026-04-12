@@ -20,8 +20,16 @@ const toContentMap = (rows) => {
 };
 
 export const getPortfolioContent = async () => {
+  return getPortfolioContentWithOptions();
+};
+
+const getPortfolioContentWithOptions = async ({ includeDefaults = false } = {}) => {
   const rows = await findAllContentRows();
   const map = toContentMap(rows);
+
+  if (!includeDefaults) {
+    return map;
+  }
 
   return {
     ...clone(DEFAULT_PORTFOLIO_CONTENT),
@@ -30,7 +38,7 @@ export const getPortfolioContent = async () => {
 };
 
 export const getAdminContent = async () => {
-  const content = await getPortfolioContent();
+  const content = await getPortfolioContentWithOptions({ includeDefaults: true });
   return {
     keys: Object.keys(content),
     content,

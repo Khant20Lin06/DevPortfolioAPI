@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { HttpError } from "../lib/errors.js";
+import { emitBroadcast } from "../lib/realtime.js";
 import { requireAdmin, requireAuth } from "../middleware/auth.js";
 import { getAdminContent, updatePortfolioContent } from "../services/contentService.js";
 
@@ -33,6 +34,12 @@ router.put("/content/:key", requireAuth, requireAdmin, async (req, res, next) =>
       key,
       data: payload.data,
       userId: req.auth.userId,
+    });
+
+    emitBroadcast("content:updated", {
+      key: updated.key,
+      updatedAt: updated.updatedAt,
+      updatedById: req.auth.userId,
     });
 
     res.status(200).json(updated);
